@@ -1,126 +1,199 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import AddMemoryModal from "@src/components/AddMemoryModal";
 import Inventory from "@src/components/Inventory";
 import LoadingOverlay from "@src/components/LoadingOverlay";
 import MemoryModal from "@src/components/MemoryModal";
+import PlacedFrame from "@src/components/PlacedFrame";
 import RoomMenu from "@src/components/RoomMenu";
 import useCustomFonts from "@src/hooks/useCustomFonts";
 import { useMemory } from "@src/hooks/useMemory";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Image,
-  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
-const RoomContent = () => {
+const Room = () => {
   const fontsLoaded = useCustomFonts();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [scrollX, setScrollX] = useState(0);
+
+  // Room dimensions - 3x wider than screen
+  const roomWidth = screenWidth * 3;
+  const roomHeight = screenHeight;
+
+  const openStore = () => {
+    router.push("/store");
+  };
+
   const {
     modalType,
     selectedMemory,
-    openModal,
+    placedItems,
+    placedItemMemories,
     closeModal,
-    saveMemory,
-    updateMemory,
-    deleteMemory,
-  } = useMemory();
-  const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+    handleItemSelect,
+    moveItem,
+    handleFramePress,
+    handleSaveMemory,
+    handleUpdateMemory,
+    handleDeleteMemory,
+    isInventoryOpen,
+    openInventory,
+    closeInventory,
+    trashLayout,
+    setTrashLayout,
+    removeItem,
+    isTrashActive,
+    setIsTrashActive,
+    showTrash,
+    setShowTrash,
+    activeFrameId,
+  } = useMemory(scrollX);
 
   return (
     <View style={styles.container}>
       {!fontsLoaded && <LoadingOverlay />}
-      <View style={styles.bottomContainer}>
-        {/* Home */}
-        <Pressable
-          style={styles.icon}
-          onPress={() => {
-            router.replace("/");
-          }}
-        >
-          <FontAwesome name="home" size={35} color="white" />
-          <Text style={styles.textIcon}>Home</Text>
-        </Pressable>
 
-        {/* Menu */}
-        <RoomMenu onOpenInventory={() => setIsInventoryOpen(true)} />
-      </View>
-      {isInventoryOpen && (
-        <Inventory onClose={() => setIsInventoryOpen(false)} />
-      )}
+      {/* Scrollable Room Area */}
+      <ScrollView
+        ref={scrollViewRef}
+        horizontal
+        style={styles.roomScrollView}
+        contentContainerStyle={[styles.roomContent, { width: roomWidth }]}
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        onScroll={(e) => {
+          setScrollX(e.nativeEvent.contentOffset.x);
+        }}
+        scrollEventThrottle={16}
+      >
+        {/* Room Background */}
+        <View style={[{ width: roomWidth, height: roomHeight }]}>
+          {/* Render placed frames */}
+          {placedItems.map((item) => (
+            <PlacedFrame
+              key={item.id}
+              item={item}
+              onMove={moveItem}
+              onPress={() => handleFramePress(item.id)}
+              onDelete={removeItem}
+              trashLayout={trashLayout}
+              setTrashActive={setIsTrashActive}
+              setShowTrash={setShowTrash}
+              memory={placedItemMemories[item.id]}
+              roomWidth={roomWidth}
+              roomHeight={roomHeight}
+              scrollX={scrollX}
+            />
+          ))}
+        </View>
+      </ScrollView>
 
-      {/* Nút Thêm ký ức luôn hiển thị */}
-      <View style={styles.addContainerWrapper}>
-        <Pressable
-          onPress={openModal}
-          style={({ pressed }) => [
-            styles.pressableArea,
-            pressed && styles.pressed,
-          ]}
-        >
-          <View style={styles.addContainer}>
-            {selectedMemory?.image ? (
-              <Image
-                source={{ uri: selectedMemory.image }}
-                style={styles.memoryImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <>
-                <MaterialCommunityIcons
-                  name="image-plus"
-                  size={24}
-                  color="black"
-                  style={styles.addIcon}
-                />
-                <Text style={styles.addText}>Thêm kỷ niệm</Text>
-              </>
-            )}
+      {/* Fixed UI Elements */}
+      <View style={styles.fixedUIContainer}>
+        {/* Bottom UI */}
+        <View style={styles.bottomContainer}>
+          {/* Home */}
+          <Pressable
+            style={styles.icon}
+            onPress={() => {
+              router.replace("/home");
+            }}
+          >
+            <FontAwesome name="home" size={35} color="white" />
+            <Text style={styles.textIcon}>Home</Text>
+          </Pressable>
+
+          {/* Menu */}
+          <RoomMenu onOpenInventory={openInventory} />
+        </View>
+
+        {/* Trash (Fixed position) */}
+        {showTrash && (
+          <View
+            style={[
+              styles.trashZone,
+              {
+                backgroundColor: isTrashActive
+                  ? "rgba(255,0,0,0.6)"
+                  : "rgba(255,0,0,0.2)",
+              },
+            ]}
+            onLayout={(e) => {
+              const { x, y, width, height } = e.nativeEvent.layout;
+              setTrashLayout({
+                x: screenWidth / 2 - width / 2,
+                y: screenHeight - 60 - height,
+                w: width,
+                h: height,
+              });
+            }}
+          >
+            <MaterialCommunityIcons name="trash-can" size={40} color="white" />
           </View>
-        </Pressable>
+        )}
       </View>
+
+      {/* Overlays */}
+      {isInventoryOpen && (
+        <Inventory
+          onClose={closeInventory}
+          onItemSelect={handleItemSelect}
+          onGoToShop={openStore}
+        />
+      )}
 
       {fontsLoaded && modalType === "add" && (
         <AddMemoryModal
           visible={true}
           onClose={closeModal}
-          onSave={saveMemory}
+          onSave={handleSaveMemory}
         />
       )}
 
-      {fontsLoaded && modalType === "view" && selectedMemory && (
+      {modalType === "view" && selectedMemory && (
         <MemoryModal
+          visible={true}
           onClose={closeModal}
           memory={selectedMemory}
-          onUpdate={updateMemory}
-          onDelete={deleteMemory}
+          onUpdate={handleUpdateMemory}
+          onDelete={handleDeleteMemory}
+          onFrameRemoved={activeFrameId === null}
         />
       )}
     </View>
   );
 };
 
-const Room = () => {
-  if (Platform.OS === "ios") {
-    return (
-      <SafeAreaProvider>
-        <RoomContent />
-      </SafeAreaProvider>
-    );
-  }
-  return <RoomContent />;
-};
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  roomScrollView: {
+    flex: 1,
+  },
+  roomContent: {
+    minHeight: "100%",
+  },
+  fixedUIContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: "box-none",
+  },
   bottomContainer: {
     position: "absolute",
-    bottom: 15,
+    bottom: 10,
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
@@ -131,45 +204,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   textIcon: {
-    marginTop: -8,
     color: "white",
     fontSize: 12,
+    marginTop: -8,
     fontFamily: "Baloo2_medium",
   },
-  addContainerWrapper: {
+  trashZone: {
     position: "absolute",
-    top: 50,
-    left: 100,
-    padding: 10,
-  },
-  pressableArea: {
-    padding: 10,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  addContainer: {
-    backgroundColor: "#EDE7E7",
+    bottom: 20,
+    alignSelf: "center",
+    width: 70,
+    height: 70,
+    borderRadius: 40,
+    alignItems: "center",
     justifyContent: "center",
-    borderColor: "#DCCCEC",
-    borderWidth: 5,
-    height: 200,
-    width: 150,
-  },
-  addIcon: {
-    marginHorizontal: "auto",
-  },
-  addText: {
-    fontFamily: "Baloo2_semiBold",
-    fontSize: 12,
-    textAlign: "center",
-  },
-  modalContainer: {
-    flex: 1,
-  },
-  memoryImage: {
-    width: "100%",
-    height: "100%",
   },
 });
 

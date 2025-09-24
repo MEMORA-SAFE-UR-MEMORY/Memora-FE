@@ -34,9 +34,13 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
+
+  const showCustomAlert = (message: string) => {
+    setAlertMessage(message);
+  };
 
   // Hàm gọi API register
   const handleRegister = async () => {
@@ -56,23 +60,12 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
         }),
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers);
-      console.log("Full response object:", response);
-
       // Đọc response text để debug
 
       // Kiểm tra response
       if (response.ok) {
         const data = await response.json();
-        Alert.alert("Thành công", "Đăng ký tài khoản thành công!", [
-          {
-            text: "OK",
-            onPress: () => {
-              router.replace("/");
-            },
-          },
-        ]);
+        showCustomAlert("Đăng ký tài khoản thành công!");
       } else {
         let errorMessage = "Đăng ký thất bại. Vui lòng thử lại.";
 
@@ -83,7 +76,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
           // Nếu không parse được JSON thì dùng message mặc định
         }
 
-        Alert.alert("Lỗi", errorMessage);
+        showCustomAlert(errorMessage);
       }
     } catch (error) {
       console.error("Register error:", error);
@@ -128,6 +121,19 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
           onRequestClose={onClose}
           supportedOrientations={["portrait", "landscape"]}
         >
+          {alertMessage && (
+            <AlertModal
+              title={alertMessage}
+              onClose={() => {
+                // Nếu đăng ký thành công thì chuyển trang
+                if (alertMessage.includes("thành công")) {
+                  router.replace("/");
+                }
+                setAlertMessage(null);
+              }}
+            />
+          )}
+
           <View style={styles.modalContainer}>
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
