@@ -89,7 +89,7 @@ export default function HallScreen() {
               img_url: room.door?.img_url,
               color_hex: room.door?.color_hex,
             }}
-            onPress={() => console.log("Go to room", room.id)}
+            onPress={() => router.replace("/room")}
           />
         ))}
 
