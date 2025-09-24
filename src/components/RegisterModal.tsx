@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
+import { Alert } from "react-native";
 import {
   Text,
   TextInput,
@@ -13,6 +14,9 @@ import {
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Button from "./Button";
+import AlertModal from "./Alert";
+import { BlurView } from "expo-blur";
+import { router } from "expo-router";
 
 interface RegisterModalProps {
   visible: boolean;
@@ -25,11 +29,94 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   onClose,
   onLoginPress,
 }) => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  // Hàm gọi API register
+  const handleRegister = async () => {
+    setLoading(true);
+    console.log(username, password);
+    const apiUrl = `https://memora.somee.com/api/User/register?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
+      });
+
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+      console.log("Full response object:", response);
+
+      // Đọc response text để debug
+
+      // Kiểm tra response
+      if (response.ok) {
+        const data = await response.json();
+        Alert.alert("Thành công", "Đăng ký tài khoản thành công!", [
+          {
+            text: "OK",
+            onPress: () => {
+              router.replace("/");
+            },
+          },
+        ]);
+      } else {
+        let errorMessage = "Đăng ký thất bại. Vui lòng thử lại.";
+
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // Nếu không parse được JSON thì dùng message mặc định
+        }
+
+        Alert.alert("Lỗi", errorMessage);
+      }
+    } catch (error) {
+      console.error("Register error:", error);
+      Alert.alert(
+        "Lỗi",
+        "Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderAlert = () => {
+    if (!showAlert) return null;
+
+    return (
+      <AlertModal
+        title={"Điền đầy đủ thông tin"}
+        onClose={() => setShowAlert(false)}
+      />
+      // <BlurView intensity={20} style={StyleSheet.absoluteFill}>
+      //   <View style={styles.alertContainer}>
+      //     <Text style={styles.alertTitle}>Điền đầy đủ thông tin</Text>
+      //     <TouchableOpacity
+      //       style={styles.alertButton}
+      //       onPress={() => setShowAlert(false)}
+      //     >
+      //       <Text style={styles.alertButtonText}>OK</Text>
+      //     </TouchableOpacity>
+      //   </View>
+      // </BlurView>
+    );
+  };
 
   return (
     <SafeAreaProvider>
@@ -53,11 +140,11 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
                 <Text style={styles.title}>Tạo tài khoản mới!</Text>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>E-mail</Text>
+                  <Text style={styles.label}>Username</Text>
                   <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Nhập email của bạn"
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder="Nhập username của bạn"
                     keyboardType="email-address"
                     style={styles.input}
                   />
@@ -114,10 +201,18 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
                 </TouchableOpacity>
 
                 <View style={styles.buttonContainer}>
-                  <Button h={44} w={493} title="Đăng ký" color="A6E3FF" />
+                  <Button
+                    h={44}
+                    w={493}
+                    title={loading ? "Chờ xử lí" : "Đăng ký"}
+                    color="A6E3FF"
+                    onPress={handleRegister}
+                    disabled={false}
+                  />
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
+            {renderAlert()}
           </View>
         </Modal>
       </SafeAreaView>
@@ -181,6 +276,43 @@ const styles = StyleSheet.create({
     top: 0,
     padding: 8,
     zIndex: 1,
+  },
+  alertContainer: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -150 }, { translateY: -75 }],
+    width: 300,
+    height: 150,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 20,
+  },
+  alertButton: {
+    backgroundColor: "#A6E3FF",
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  alertButtonText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
 

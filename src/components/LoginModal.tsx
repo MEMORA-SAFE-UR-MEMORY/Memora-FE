@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
+import { Alert } from "react-native";
 import {
   Text,
   TextInput,
@@ -20,8 +21,6 @@ interface LoginModalProps {
   onClose: () => void;
   onRegisterPress: () => void;
   onForgotPasswordPress: () => void;
-  onLogin: () => void;
-  loading?: boolean;
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({
@@ -29,12 +28,11 @@ const LoginModal: React.FC<LoginModalProps> = ({
   onClose,
   onRegisterPress,
   onForgotPasswordPress,
-  onLogin,
-  loading = false,
 }) => {
-  const [email, onChangeEmail] = useState("");
-  const [password, onChangePassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   return (
     <SafeAreaProvider>
@@ -94,7 +92,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                     E-mail
                   </Text>
                   <TextInput
-                    onChangeText={onChangeEmail}
+                    onChangeText={setEmail}
                     value={email}
                     placeholder="Nhập email của bạn"
                     keyboardType="default"
@@ -113,7 +111,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                     Mật khẩu
                   </Text>
                   <TextInput
-                    onChangeText={onChangePassword}
+                    onChangeText={setPassword}
                     value={password}
                     placeholder="Nhập mật khẩu của bạn"
                     keyboardType="default"
@@ -165,9 +163,10 @@ const LoginModal: React.FC<LoginModalProps> = ({
                   <Button
                     h={44}
                     w={493}
-                    title={"Đăng nhập"}
-                    color={"A6E3FF"}
-                    onPress={onLogin}
+                    title={loading ? "Đang đăng nhập..." : "Đăng nhập"}
+                    color="A6E3FF"
+                    onPress={() => router.replace("/home")}
+                    disabled={loading}
                   />
                 </View>
               </ScrollView>

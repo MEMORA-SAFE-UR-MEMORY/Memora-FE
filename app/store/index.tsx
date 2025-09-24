@@ -1,4 +1,6 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import Button from "@src/components/Button";
+import ConfirmBuyModal from "@src/components/ConfirmBuyItemModal";
 import ShopCategory from "@src/components/ShopCategory";
 import { useShopItem } from "@src/hooks/useShopItem";
 import { useState } from "react";
@@ -10,11 +12,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Shop = () => {
   const puzzle = 10;
   const { items, categories, getItemsByCategory } = useShopItem();
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectItem, setSelectItem] = useState(null);
+  const [openConfirmModal, setOpenConfirmModal] = useState(false);
 
   const [categoryOpen, setCategoryOpen] = useState(false);
 
@@ -23,9 +28,51 @@ const Shop = () => {
   const openCategory = () => {
     setCategoryOpen(true);
   };
+
+  const handleSelectItem = (item) => {
+    setSelectItem(item);
+  };
+
   return (
     <View style={{ flex: 1, flexDirection: "row" }}>
-      <View style={{ width: 307, backgroundColor: "#B1E2FF" }}></View>
+      <View style={{ width: 307, backgroundColor: "#B1E2FF" }}>
+        <SafeAreaView>
+          {selectItem ? (
+            <View style={{ alignItems: "center", marginTop: 50 }}>
+              <Image
+                source={selectItem.image}
+                style={{ width: 155, height: 202, marginBottom: 10 }}
+                resizeMode="contain"
+              />
+              <Text
+                style={{
+                  fontSize: 30,
+                  marginBottom: 5,
+                  textAlign: "center",
+                }}
+              >
+                {selectItem.name}
+              </Text>
+              <View style={{ marginTop: 10 }}>
+                <Button
+                  color={"FEEAF4"}
+                  h={30}
+                  w={100}
+                  title={selectItem.price}
+                  textStyle={{ marginRight: "10" }}
+                  onPress={() => setOpenConfirmModal(true)}
+                />
+                <View style={{ position: "absolute", right: 25, bottom: 8 }}>
+                  <Ionicons name="extension-puzzle" size={15} color="#FB8CAC" />
+                </View>
+              </View>
+              <ConfirmBuyModal visible={openConfirmModal} />
+            </View>
+          ) : (
+            <View></View>
+          )}
+        </SafeAreaView>
+      </View>
 
       <ScrollView
         style={{ width: 624, backgroundColor: "#FEE3F4", paddingTop: 10 }}
@@ -53,32 +100,34 @@ const Shop = () => {
           scrollEnabled={false}
           renderItem={({ item }) => (
             <View>
-              <View
-                style={{
-                  width: 90,
-                  height: 90,
-                  borderRadius: 100,
-                  backgroundColor: "white",
-                  marginHorizontal: 30,
-                  marginVertical: 15,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  overflow: "hidden",
-                }}
-              >
-                <Image source={item.image} resizeMode="contain" />
-              </View>
-              <View
-                style={{
-                  justifyContent: "center",
-                  alignItems: "center",
-                  flexDirection: "row",
-                  gap: 5,
-                }}
-              >
-                <Text style={{ fontSize: 20 }}>{item.price}</Text>
-                <Ionicons name="extension-puzzle" size={20} color="#FB8CAC" />
-              </View>
+              <TouchableOpacity onPress={() => handleSelectItem(item)}>
+                <View
+                  style={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 100,
+                    backgroundColor: "white",
+                    marginHorizontal: 30,
+                    marginVertical: 15,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Image source={item.image} resizeMode="contain" />
+                </View>
+                <View
+                  style={{
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flexDirection: "row",
+                    gap: 5,
+                  }}
+                >
+                  <Text style={{ fontSize: 20 }}>{item.price}</Text>
+                  <Ionicons name="extension-puzzle" size={20} color="#FB8CAC" />
+                </View>
+              </TouchableOpacity>
             </View>
           )}
         />

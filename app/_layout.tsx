@@ -1,5 +1,7 @@
 import { MusicProvider } from "@src/context/MusicContext";
 import { Stack } from "expo-router";
+import { useEffect } from "react";
+import { Linking } from "react-native";
 
 import { Image, ImageBackground, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
